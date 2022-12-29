@@ -442,6 +442,10 @@ public:
 			regs[pc].ul += 1; // reg size
 
 			if (i2 == 0x00) { // push reg
+				LOG("push ");
+				print_register_by_id(reg);
+				LOG("\n");
+
 				if (reg % 5 == 0)
 					push(regs[reg/5].ull);
 
@@ -459,6 +463,10 @@ public:
 			}
 
 			if (i2 == 0x01) { // pop reg
+				LOG("pop ");
+				print_register_by_id(reg);
+				LOG("\n");
+
 				if (reg % 5 == 0)
 					regs[reg/5].ull = pop128();
 
@@ -476,30 +484,40 @@ public:
 			}
 
 			if (i2 == 0x02) { // push ll num
+				LOG("push %016lx%016lx\n", param.ul, (uint64)(param.ull >> 64));
+
 				regs[pc].ul += 16; // ll num size
 
 				push(param.ull);
 			}
 
 			if (i2 == 0x03) { // push l num
+				LOG("push %016lx\n", param.ul);
+
 				regs[pc].ul += 8; // l num size
 
 				push(param.ul);
 			}
 
 			if (i2 == 0x04) { // push i num
+				LOG("push %08x\n", param.ui);
+
 				regs[pc].ul += 4; // i num size
 
 				push(param.ui);
 			}
 
 			if (i2 == 0x05) { // push s num
+				LOG("push %04x\n", param.us);
+
 				regs[pc].ul += 2; // s num size
 
 				push(param.us);
 			}
 
 			if (i2 == 0x06) { // push b num
+				LOG("push %02x\n", param.ub);
+
 				regs[pc].ul += 1; // b num size
 
 				push(param.ub);
@@ -508,25 +526,62 @@ public:
 
 
 		if (i1 == 0x03) { // jmp
+			regs[pc].ul += 1; // reg size
 			regs[pc].ul += 8; // addr size
 
-			if (i2 == 0x00 && get_flag_state(FLAG::equals))
-				regs[pc].ul = param.ul;
+			if (i2 == 0x00) {
+				LOG("je %016lx\n", param.ul);
 
-			if (i2 == 0x01 && ~get_flag_state(FLAG::equals))
-				regs[pc].ul = param.ul;
+				if (get_flag_state(FLAG::equals))
+					regs[pc].ul = param.ul;
+			}
 
-			if (i2 == 0x02 && get_flag_state(FLAG::overflow))
-				regs[pc].ul = param.ul;
+			if (i2 == 0x01) {
+				LOG("jne %016lx\n", param.ul);
 
-			if (i2 == 0x03 && get_flag_state(FLAG::more))
-				regs[pc].ul = param.ul;
+				if (~get_flag_state(FLAG::equals))
+					regs[pc].ul = param.ul;
+			}
 
-			if (i2 == 0x04 && (get_flag_state(FLAG::overflow) || get_flag_state(FLAG::equals)))
-				regs[pc].ul = param.ul;
+			if (i2 == 0x02) {
+				LOG("jl %016lx\n", param.ul);
 
-			if (i2 == 0x05 && (get_flag_state(FLAG::more) || get_flag_state(FLAG::equals)))
+				if (get_flag_state(FLAG::overflow))
+					regs[pc].ul = param.ul;
+			}
+
+			if (i2 == 0x03) {
+				LOG("jb %016lx\n", param.ul);
+
+				if (get_flag_state(FLAG::more))
+					regs[pc].ul = param.ul;
+			}
+
+			if (i2 == 0x04) {
+				LOG("jle %016lx\n", param.ul);
+
+				if (get_flag_state(FLAG::overflow) || get_flag_state(FLAG::equals))
+					regs[pc].ul = param.ul;
+			}
+
+			if (i2 == 0x05) {
+				LOG("jbe %016lx\n", param.ul);
+
+				if (get_flag_state(FLAG::more) || get_flag_state(FLAG::equals))
+					regs[pc].ul = param.ul;
+			}
+
+			if (i2 == 0x06) { // call
+				LOG("call %016lx\n", param.ul);
+
+				push(regs[pc].ul);
 				regs[pc].ul = param.ul;
+			}
+
+			if (i2 == 0x08) { // ret
+				LOG("ret\n");
+				regs[pc].ul = pop64();
+			}
 		}
 
 
