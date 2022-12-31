@@ -307,7 +307,7 @@ public:
 
 			if (i2 == 0x01) { // num to reg
 				if (reg % 5 == 0) {
-					LOG("%016lx%016lx\n", param.ul, (uint64)(param.ull >> 64));
+					LOG("%016lx%016lx\n", (uint64)(param.ull >> 64), param.ul);
 					regs[pc].ul += 16; // long long int size
 					regs[reg/5].ull = param.ull;
 				}
@@ -406,7 +406,7 @@ public:
 
 			}
 
-			if (i2 == 0x01) { // cmp
+			if (i2 == 0x02) { // cmp
 				LOG("cmp ");
 				print_register_by_id(reg);
 				LOG(" ");
@@ -484,7 +484,7 @@ public:
 			}
 
 			if (i2 == 0x02) { // push ll num
-				LOG("push %016lx%016lx\n", param.ul, (uint64)(param.ull >> 64));
+				LOG("push %016lx%016lx\n", (uint64)(param.ull >> 64), param.ul);
 
 				regs[pc].ul += 16; // ll num size
 
