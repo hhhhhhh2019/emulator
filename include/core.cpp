@@ -20,7 +20,9 @@ enum ALU {
 	DIV,
 	OR,
 	AND,
-	XOR
+	XOR,
+	LSHFT,
+	RSHFT
 };
 
 
@@ -91,11 +93,13 @@ public:
 		set_flag_state(FLAG::more, 0);
 		set_flag_state(FLAG::overflow, 0);
 
-		T sum;
-		T sub;
+		T sum, sub, mul, div1, div2;
 
 		sum = a + b;
 		sub = a - b;
+		mul = a * b;
+		div1 = a / b;
+		div2 = a % b;
 
 		if (a < b)
 			set_flag_state(FLAG::overflow, 1);
@@ -110,6 +114,10 @@ public:
 			return sum;
 		if (op == ALU::SUB)
 			return sub;
+		if (op == ALU::MUL)
+			return mul;
+		if (op == ALU::DIV)
+			return (div1 << sizeof(T) / 2) | div2;
 
 		return 0;
 	}
@@ -336,6 +344,32 @@ public:
 					regs[reg/5].ub = param.ub;
 				}
 			}
+
+			if (i2 == 0x02) { // from mem
+				LOG("[%08lx]\n", param.ul);
+
+				regs[pc].ul += 8; // addr size
+
+				if (reg % 5 == 0) {
+					regs[reg/5].ull = popRAM(param.ul);
+				}
+
+				if (reg % 5 == 1) {
+					regs[reg/5].ul = popRAM(param.ul);
+				}
+
+				if (reg % 5 == 2) {
+					regs[reg/5].ui = popRAM(param.ul);
+				}
+
+				if (reg % 5 == 3) {
+					regs[reg/5].us = popRAM(param.ul);
+				}
+
+				if (reg % 5 == 4) {
+					regs[reg/5].ub = popRAM(param.ul);
+				}
+			}
 		}
 
 
@@ -403,7 +437,6 @@ public:
 
 				if (reg % 5 == 4)
 					regs[reg/5].ub = alu(regs[param.ub/5].ub,regs[p2/5].ub, ALU::SUB);
-
 			}
 
 			if (i2 == 0x02) { // cmp
@@ -434,6 +467,66 @@ public:
 
 				if (reg % 5 == 4)
 					alu(regs[param.ub/5].ub,regs[p2/5].ub, ALU::SUB);
+			}
+
+			if (i2 == 0x03) { // mul
+				LOG("mul ");
+				print_register_by_id(reg);
+				LOG(" ");
+				print_register_by_id(param.ub);
+				LOG(" ");
+				print_register_by_id(p2);
+				LOG("\n");
+
+				if (reg % 5 != param.ub % 5 || reg % 5 != p2 % 5 || param.ub % 5 != p2 % 5) {
+					illegal();
+					return;
+				}
+
+				if (reg % 5 == 0)
+					regs[reg/5].ull = alu(regs[param.ub/5].ull,regs[p2/5].ull, ALU::MUL);
+
+				if (reg % 5 == 1)
+					regs[reg/5].ul = alu(regs[param.ub/5].ul,regs[p2/5].ul, ALU::MUL);
+
+				if (reg % 5 == 2)
+					regs[reg/5].ui = alu(regs[param.ub/5].ui,regs[p2/5].ui, ALU::MUL);
+
+				if (reg % 5 == 3)
+					regs[reg/5].us = alu(regs[param.ub/5].us,regs[p2/5].us, ALU::MUL);
+
+				if (reg % 5 == 4)
+					regs[reg/5].ub = alu(regs[param.ub/5].ub,regs[p2/5].ub, ALU::MUL);
+			}
+
+			if (i2 == 0x04) { // div
+				LOG("div ");
+				print_register_by_id(reg);
+				LOG(" ");
+				print_register_by_id(param.ub);
+				LOG(" ");
+				print_register_by_id(p2);
+				LOG("\n");
+
+				if (reg % 5 != param.ub % 5 || reg % 5 != p2 % 5 || param.ub % 5 != p2 % 5) {
+					illegal();
+					return;
+				}
+
+				if (reg % 5 == 0)
+					regs[reg/5].ull = alu(regs[param.ub/5].ull,regs[p2/5].ull, ALU::SUB);
+
+				if (reg % 5 == 1)
+					regs[reg/5].ul = alu(regs[param.ub/5].ul,regs[p2/5].ul, ALU::SUB);
+
+				if (reg % 5 == 2)
+					regs[reg/5].ui = alu(regs[param.ub/5].ui,regs[p2/5].ui, ALU::SUB);
+
+				if (reg % 5 == 3)
+					regs[reg/5].us = alu(regs[param.ub/5].us,regs[p2/5].us, ALU::SUB);
+
+				if (reg % 5 == 4)
+					regs[reg/5].ub = alu(regs[param.ub/5].ub,regs[p2/5].ub, ALU::SUB);
 			}
 		}
 
