@@ -26,26 +26,6 @@ enum ALU {
 };
 
 
-const char* registers[80] = {
-	"r0","l0","i0","s0","b0",
-	"r1","l1","i1","s1","b1",
-	"r2","l2","i2","s2","b2",
-	"r3","l3","i3","s3","b3",
-	"r4","l4","i4","s4","b4",
-	"r5","l5","i5","s5","b5",
-	"r6","l6","i6","s6","b6",
-	"r7","l7","i7","s7","b7",
-	"r8","l8","i8","s8","b8",
-	"r9","l9","i9","s9","b9",
-	"r10","l10","i10","s10","b10",
-	"r11","l11","i11","s11","b11",
-	"r12","l12","i12","s12","b12",
-	"r13","l13","i13","s13","b13",
-	"r14","l14","i14","s14","b14",
-	"r15","l15","i15","s15","b15",
-};
-
-
 class Core {
 public:
 	Register regs[REG::COUNT];
@@ -248,6 +228,16 @@ public:
 	}
 
 
+	void interrupt(uint8 id) {
+		uint64 fst = (id << 6) + regs[ip].ul;
+
+		for (int i = 0; i < REG::COUNT; i++)
+			push(regs[i].ull);
+
+		regs[pc].ul = popRAM(fst);
+	}
+
+
 	void step() {
 		if (get_flag_state(FLAG::running) == 0)
 			return;
@@ -368,6 +358,106 @@ public:
 
 				if (reg % 5 == 4) {
 					regs[reg/5].ub = popRAM(param.ul);
+				}
+			}
+
+			if (i2 == 0x03) { // to mem
+				LOG("{%08lx}\n", param.ul);
+
+				regs[pc].ul += 8; // addr size
+
+				param.ul += regs[lo].ul;
+
+				if (reg % 5 == 0) {
+					for (int i = 0; i < 16; i++) {
+						ram[param.ul + i] = (regs[reg/5].ull >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 1) {
+					for (int i = 0; i < 8; i++) {
+						ram[param.ul + i] = (regs[reg/5].ul >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 2) {
+					for (int i = 0; i < 4; i++) {
+						ram[param.ul + i] = (regs[reg/5].ui >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 3) {
+					for (int i = 0; i < 2; i++) {
+						ram[param.ul + i] = (regs[reg/5].us >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 4) {
+					for (int i = 0; i < 1; i++) {
+						ram[param.ul + i] = (regs[reg/5].ub >> (i << 3)) & 0xff;
+					}
+				}
+			}
+
+			if (i2 == 0x04) { // global from mem
+				LOG("global [%08lx]\n", param.ul);
+
+				regs[pc].ul += 8; // addr size
+
+				if (reg % 5 == 0) {
+					regs[reg/5].ull = popRAM(param.ul - regs[lo].ul);
+				}
+
+				if (reg % 5 == 1) {
+					regs[reg/5].ul = popRAM(param.ul - regs[lo].ul);
+				}
+
+				if (reg % 5 == 2) {
+					regs[reg/5].ui = popRAM(param.ul - regs[lo].ul);
+				}
+
+				if (reg % 5 == 3) {
+					regs[reg/5].us = popRAM(param.ul - regs[lo].ul);
+				}
+
+				if (reg % 5 == 4) {
+					regs[reg/5].ub = popRAM(param.ul - regs[lo].ul);
+				}
+			}
+
+			if (i2 == 0x05) { // global to mem
+				LOG("global {%08lx}\n", param.ul);
+
+				regs[pc].ul += 8; // addr size
+
+				if (reg % 5 == 0) {
+					for (int i = 0; i < 16; i++) {
+						ram[param.ul + i] = (regs[reg/5].ull >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 1) {
+					for (int i = 0; i < 8; i++) {
+						ram[param.ul + i] = (regs[reg/5].ul >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 2) {
+					for (int i = 0; i < 4; i++) {
+						ram[param.ul + i] = (regs[reg/5].ui >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 3) {
+					for (int i = 0; i < 2; i++) {
+						ram[param.ul + i] = (regs[reg/5].us >> (i << 3)) & 0xff;
+					}
+				}
+
+				if (reg % 5 == 4) {
+					for (int i = 0; i < 1; i++) {
+						ram[param.ul + i] = (regs[reg/5].ub >> (i << 3)) & 0xff;
+					}
 				}
 			}
 		}
@@ -671,9 +761,41 @@ public:
 				regs[pc].ul = param.ul;
 			}
 
+			if (i2 == 0x07) { // call from reg
+				LOG("call ");
+				print_register_by_id(reg);
+				LOG("\n");
+
+				regs[pc].ul -= 8; // addr size
+
+				if (reg % 5 != 1) {
+					illegal();
+					return;
+				}
+
+				push(regs[pc].ul);
+				regs[pc].ul = regs[reg/5].ul;
+			}
+
 			if (i2 == 0x08) { // ret
 				LOG("ret\n");
 				regs[pc].ul = pop64();
+			}
+
+			if (i2 == 0x09) { // int
+				LOG("int %02x\n", param.ub);
+
+				regs[pc].ul -= 8; // addr size
+				regs[pc].ul += 1; // int id size
+
+				interrupt(param.ub);
+			}
+
+			if (i2 == 0x0a) { // iret
+				LOG("iret\n");
+
+				for (int i = REG::COUNT - 1; i >= 0; i--)
+					regs[i].ull = pop128();
 			}
 		}
 
