@@ -2,7 +2,7 @@
 #include <utils.h>
 #include <register.h>
 
-#include <fstream>
+#include <stdio.h>
 
 
 uint8 *ram;
@@ -10,7 +10,7 @@ Core *cores;
 
 uint8 *bios;
 
-char *bios_name = (char*)"std_bios.bin";
+char *bios_name = (char*)"std_bios";
 uint64 ram_size = 1024 * 1024 * 1; // 1 M
 uint8 cores_count = 1;
 
@@ -55,7 +55,7 @@ int main() {
 	INFO("init core 0\n");
 
 	cores[0].set_flag(FLAG_RUNNING, 1);
-	cores[0].regs[REG_PC].ul = BIOS_OFFSET;
+	cores[0].regs[REG_LO].ul = BIOS_OFFSET;
 	cores[0].regs[REG_SP].ul = BIOS_OFFSET;
 
 	while (cores[0].get_flag(FLAG_RUNNING)) {

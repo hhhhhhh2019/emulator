@@ -7,6 +7,10 @@
 
 #define ALU_SUM 0
 #define ALU_SUB 1
+#define ALU_MUL 2
+#define ALU_DIV 3
+#define ALU_IMUL 4
+#define ALU_IDIV 5
 
 
 struct Core {

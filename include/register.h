@@ -2,12 +2,10 @@
 
 #include <utils.h>
 
-
-// 256 / 5
-#define REGISTERS_COUNT 51
-#define REG_PC 50
-#define REG_SP 49
-#define REG_LO 48
+#define REGISTERS_COUNT 16
+#define REG_PC REGISTERS_COUNT - 1
+#define REG_SP REGISTERS_COUNT - 2
+#define REG_LO REGISTERS_COUNT - 3
 
 #define FLAG_RUNNING 1
 #define FLAG_EQUALS 2
@@ -16,8 +14,8 @@
 
 
 union Register {
-	uint128 ull;
-	int128 ll;
+	uint128 ur;
+	int128 r;
 	uint64 ul;
 	int64 l;
 	uint32 ui;
